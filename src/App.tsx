@@ -148,12 +148,18 @@ export default function App() {
   }, [showBackpack, showTutorial]);
 
   // Intro Dialogue State
-  const [introStep, setIntroStep] = useState(5);
+  const [introStep, setIntroStep] = useState(-1);
   const [isBlurred, setIsBlurred] = useState(true);
   const [showOxygenPrompt, setShowOxygenPrompt] = useState(false);
   const [isIntroActive, setIsIntroActive] = useState(false);
 
-  const introDialogues: string[] = []; // Removed pain dialogues
+  const introDialogues: string[] = [
+    "Onde... onde estou?",
+    "Filtros de O2 falhando... visão turva...",
+    "Preciso estabilizar o fluxo de oxigênio manualmente!",
+    "O tubo reserva deve estar no painel central..."
+  ];
+
 
 
 
@@ -176,15 +182,17 @@ export default function App() {
             
             // Now player is inside the ship. Start interior blinking and dialogue.
             setIsBlinking(true);
+            setIsIntroActive(true); // Enable camera and blur immediately
+            setIsBlurred(true);
+            setIntroStep(0); // Start dialogues while blinking
+
             setTimeout(() => {
               setIsBlinking(false);
-              setIsIntroActive(true);
-              setIsBlurred(true);
-              setShowOxygenPrompt(true);
-              setIntroStep(0); 
+              setShowOxygenPrompt(true); // Show interactable 3D tube after first dialogues
             }, 3000);
 
           }, 1000);
+
         }, 4000);
       }
     }, 300);
@@ -1226,6 +1234,28 @@ export default function App() {
         </div>
       )}
 
+      {/* Intro Dialogues */}
+      {introStep >= 0 && introStep < introDialogues.length && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-[500] w-full max-w-xl px-4 pointer-events-none">
+          <div className="bg-slate-950/80 border border-white/20 p-6 rounded-lg backdrop-blur-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="flex items-center gap-3 mb-3 border-b border-white/10 pb-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_red]"></div>
+                <span className="text-[10px] font-mono text-white/40 tracking-[0.4em] uppercase">VITAL SIGNS: MONITORING // PILOT</span>
+             </div>
+             <p className="text-white font-medium text-lg tracking-wide leading-relaxed italic text-center drop-shadow-md">
+                "{introDialogues[introStep]}"
+             </p>
+             <div className="mt-6 flex justify-center">
+                <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                   <span className="text-white/30 text-[9px] font-mono uppercase tracking-widest">Pressione</span>
+                   <span className="text-white text-[10px] font-bold font-mono px-1.5 py-0.5 bg-white/10 rounded">ENTER</span>
+                   <span className="text-white/30 text-[9px] font-mono uppercase tracking-widest">Para prosseguir</span>
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
+
       {/* Fade Transition Overlay */}
       <div className={`absolute inset-0 bg-black z-[200] pointer-events-none transition-opacity duration-300 ${isFading ? 'opacity-100' : 'opacity-0'}`} />
 
@@ -1314,10 +1344,11 @@ export default function App() {
       {/* Blinking Effect Overlay */}
       {isBlinking && (
         <div className="absolute inset-0 z-[150] pointer-events-none" style={{ 
-          backgroundColor: 'rgba(0,0,0,0.9)',
+          backgroundColor: 'rgba(0,0,0,0.6)',
           animation: 'blink 3s ease-in-out forwards'
         }} />
       )}
+
 
       {/* Tutorial Message */}
       {showTutorial && (
