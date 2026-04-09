@@ -53,10 +53,12 @@ interface PlayerProps {
   isCutsceneActive?: boolean;
   initialCableState?: boolean;
   isInsideShip?: boolean;
+  isIntroActive?: boolean;
 }
 
 export const Player = forwardRef<Group, PlayerProps>(
-  ({ position = [0, 501, 10], hasDrill = false, hasPlasma = false, isDrillEquipped = true, isPlasmaEquipped = false, isAiming = false, isFirstPerson = false, plasmaAmmo, setPlasmaAmmo, isReloading, setIsReloading, isFiring, setIsFiring, setIsAiming, setTargetInfo, isCutsceneActive = false, initialCableState = true, isInsideShip = true }, ref) => {
+  ({ position = [0, 501, 10], hasDrill = false, hasPlasma = false, isDrillEquipped = true, isPlasmaEquipped = false, isAiming = false, isFirstPerson = false, plasmaAmmo, setPlasmaAmmo, isReloading, setIsReloading, isFiring, setIsFiring, setIsAiming, setTargetInfo, isCutsceneActive = false, initialCableState = true, isInsideShip = true, isIntroActive = false }, ref) => {
+
     const groupRef = useRef<Group>(null);
     const characterGroupRef = useRef<Group>(null);
     const laserMeshRef = useRef<Mesh>(null);
@@ -199,7 +201,9 @@ export const Player = forwardRef<Group, PlayerProps>(
 
     useEffect(() => {
       const handleMouseMove = (e: MouseEvent) => {
+        if (isIntroActive) return;
         if (document.pointerLockElement === gl.domElement) {
+
           yaw.current -= e.movementX * 0.003;
           pitch.current += e.movementY * 0.003; // Inverted Y-axis for standard look feel
           // Clamp pitch
@@ -208,7 +212,9 @@ export const Player = forwardRef<Group, PlayerProps>(
       };
       
       const handleClick = async () => {
+        if (isIntroActive) return;
         if (document.pointerLockElement !== gl.domElement) {
+
           try {
             await gl.domElement.requestPointerLock();
           } catch (e) {
@@ -218,7 +224,9 @@ export const Player = forwardRef<Group, PlayerProps>(
       };
 
       const handleMouseDown = (e: MouseEvent) => {
+        if (isIntroActive) return;
         if (document.pointerLockElement === gl.domElement) {
+
           if (e.button === 2 && setIsAiming) {
             if ((stateRef.current.hasDrill && stateRef.current.isDrillEquipped) || stateRef.current.isPlasmaEquipped) {
               setIsAiming(true);
@@ -326,7 +334,8 @@ export const Player = forwardRef<Group, PlayerProps>(
       }
       return false;
     };     useFrame((state, delta) => {
-      if (!groupRef.current || isCutsceneActive) return;
+      if (!groupRef.current || isCutsceneActive || isIntroActive || isDead) return;
+
 
       // Cache scene lookups periodically (every 60 frames instead of every frame)
       sceneSearchFrame.current++;

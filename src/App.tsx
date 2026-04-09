@@ -16,6 +16,8 @@ import { ShipInterior } from './components/ShipInterior';
 import { PlanetCutscene } from './components/PlanetCutscene';
 import { Group } from 'three';
 import { EffectComposer, DepthOfField } from '@react-three/postprocessing';
+import { Syringe3D } from './components/Syringe3D';
+
 
 import * as THREE from 'three';
 
@@ -146,13 +148,18 @@ export default function App() {
 
   // Intro Dialogue State
   const [introStep, setIntroStep] = useState(5);
+  const [isBlurred, setIsBlurred] = useState(true);
+  const [showSyringe, setShowSyringe] = useState(false);
+  const [isIntroActive, setIsIntroActive] = useState(false);
+
   const introDialogues = [
-    "Caramba... o que aconteceu?",
-    "Que barulho foi esse? A nave parece ter sofrido um impacto massivo.",
-    "Os sistemas principais estão offline. O motor de dobra pifou de vez.",
-    "Onde eu estou? Os sensores externos estão avariados, não consigo ver nada lá fora.",
-    "Preciso abrir a escotilha traseira e ver o que restou... espero que o ar seja respirável."
+    "Ai... minha cabeça... que dor insuportável...",
+    "A queda foi pior do que eu pensava. Onde eu estou?",
+    "Meus olhos... não consigo focar em nada. Tudo está borrado.",
+    "Preciso do kit de emergência... a seringa de adrenalina...",
+    "É a única forma de estabilizar meus sentidos."
   ];
+
 
   useEffect(() => {
     if (introPhase !== 'typing') return;
@@ -175,23 +182,15 @@ export default function App() {
             setIsBlinking(true);
             setTimeout(() => {
               setIsBlinking(false);
-              setIntroStep(0); // This starts the interior dialogues "Caramba... o que aconteceu?"
-              
-              // After some time, also show Wawnk dialogue and tutorial just to keep original flow
-              setTimeout(() => {
-                setShowWawnkDialogue(true);
-                setTimeout(() => {
-                  setShowWawnkDialogue(false);
-                  setShowTutorial(true);
-                  setTimeout(() => setShowTutorial(false), 10000);
-                }, 5000);
-              }, 20000);
-              
+              setIsIntroActive(true);
+              setIsBlurred(true);
+              setIntroStep(0); 
             }, 3000);
           }, 1000);
         }, 4000);
       }
     }, 300);
+
     return () => clearInterval(interval);
   }, [introPhase]);
 
@@ -204,10 +203,12 @@ export default function App() {
       if (introStep >= 0 && introStep < introDialogues.length) {
         if (e.code === 'Enter') {
           setIntroStep(prev => prev + 1);
-        } else if (e.code === 'Escape') {
-          setIntroStep(introDialogues.length); // Skip intro
+          if (introStep === introDialogues.length - 1) {
+             setShowSyringe(true);
+          }
         }
       }
+
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -1232,6 +1233,58 @@ export default function App() {
       {/* Fade Transition Overlay */}
       <div className={`absolute inset-0 bg-black z-[200] pointer-events-none transition-opacity duration-300 ${isFading ? 'opacity-100' : 'opacity-0'}`} />
 
+      {/* Intro Blur Effect */}
+      {isIntroActive && isBlurred && (
+        <div className="absolute inset-0 z-[400] backdrop-blur-[20px] bg-red-950/10 pointer-events-none transition-all duration-2000">
+           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-60"></div>
+        </div>
+      )}
+
+      {/* Central Mineral HUD */}
+      {targetInfo && !isDead && (
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[100] w-72 animate-in slide-in-from-top duration-500">
+           <div className="bg-slate-950/80 border border-white/10 p-3 rounded-lg backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+              <div className="flex justify-between items-end mb-2">
+                 <div className="flex flex-col">
+                    <span className="text-[8px] text-white/40 font-mono tracking-[0.3em] uppercase mb-0.5">{targetInfo.rarity}</span>
+                    <span className="text-sm font-black tracking-widest uppercase" style={{ color: targetInfo.color }}>{targetInfo.name}</span>
+                 </div>
+                 <div className="text-right">
+                    <span className="text-[10px] font-mono text-white/80">{Math.round(targetInfo.health)}%</span>
+                 </div>
+              </div>
+              <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-white/5">
+                 <div 
+                   className="h-full transition-all duration-300"
+                   style={{ 
+                     width: `${(targetInfo.health / targetInfo.maxHealth) * 100}%`,
+                     backgroundColor: targetInfo.color,
+                     boxShadow: `0 0 15px ${targetInfo.color}88`
+                   }}
+                 />
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Weapon Controls Indicator */}
+      {(isPlasmaUnlocked || isDrillUnlocked) && (selectedSlot === 'plasma' || selectedSlot === 'drill') && !isDead && !isIntroActive && (
+        <div className="absolute bottom-32 right-6 z-50 flex flex-col gap-2 animate-in slide-in-from-right duration-500">
+           <div className="flex items-center gap-3 bg-slate-900/60 backdrop-blur-md border border-white/5 py-2 px-4 rounded-md">
+              <div className="flex items-center gap-1.5">
+                 <span className="bg-white/10 text-white text-[10px] font-mono px-1.5 py-0.5 rounded border border-white/20">RMB</span>
+                 <span className="text-slate-300 text-[10px] font-bold uppercase tracking-wider">Mirar</span>
+              </div>
+              <div className="w-[1px] h-3 bg-white/10"></div>
+              <div className="flex items-center gap-1.5">
+                 <span className="bg-white/10 text-white text-[10px] font-mono px-1.5 py-0.5 rounded border border-white/20">L / F</span>
+                 <span className="text-slate-300 text-[10px] font-bold uppercase tracking-wider">Lanterna</span>
+              </div>
+           </div>
+        </div>
+      )}
+
+
       {/* Selected Item Info */}
       {typeof selectedSlot === 'number' && inventory[selectedSlot] && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 bg-slate-900/90 border border-cyan-800 p-4 rounded-lg z-50 min-w-[200px] text-center backdrop-blur-sm pointer-events-auto">
@@ -1325,7 +1378,9 @@ export default function App() {
           isCutsceneActive={showPlanetCutscene || showExitCutscene}
           initialCableState={initialCableState}
           isInsideShip={isInsideShip}
+          isIntroActive={isIntroActive}
         />
+
         
         <MineralCluster onTarget={setTargetInfo} playerRef={playerRef} isDrillEquipped={selectedSlot === 'drill'} />
         
@@ -1334,7 +1389,21 @@ export default function App() {
         <NPC name="CPL. HAWK" role="ASSAULT" color="#451a1a" startPosition={[8, 0, -8]} playerRef={playerRef} showUI={showUI} isInjured={true} />
 
         {/* Effect composer removed for better optimization */}
+        {/* 3D Syringe Interaction */}
+        {showSyringe && (
+          <Syringe3D 
+            onUse={() => {
+              setShowSyringe(false);
+              setIsBlurred(false);
+              setTimeout(() => {
+                setIsIntroActive(false);
+                setNotification("Sentidos Estabilizados.");
+              }, 2000);
+            }} 
+          />
+        )}
       </Canvas>
+
       )}
       <Loader 
         containerStyles={{ background: 'rgba(5, 10, 20, 0.9)', zIndex: 350 }} 
