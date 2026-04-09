@@ -389,7 +389,10 @@ export const Player = forwardRef<Group, PlayerProps>(
         }));
       } 
 
-      if (isInsideShip) {
+      if (isIntroActive) {
+        oxygenLevel.current = 5;
+        setIsCableConnected(true); // Inside ship
+      } else if (isInsideShip) {
         setIsCableConnected(true);
         oxygenLevel.current = Math.min(100, oxygenLevel.current + delta * 20); // Fast recharge inside
       } else {
@@ -414,9 +417,11 @@ export const Player = forwardRef<Group, PlayerProps>(
       }
 
 
+
       // Update Oxygen UI
-      if (!isIntroActive) {
+      {
         const oxygenBar = document.getElementById('oxygen-fill');
+
         const oxygenContainer = document.getElementById('oxygen-container');
         if (oxygenBar && oxygenContainer) {
           oxygenBar.style.width = `${oxygenLevel.current}%`;
@@ -428,7 +433,7 @@ export const Player = forwardRef<Group, PlayerProps>(
             } 
           }));
 
-          if (oxygenLevel.current < 20 && !isCableConnected && !isInsideShip) {
+          if (oxygenLevel.current < 20 || isIntroActive) {
             oxygenBar.style.backgroundColor = '#ef4444'; // Red
             oxygenContainer.classList.add('animate-pulse');
           } else if (oxygenLevel.current < 50) {
@@ -440,6 +445,7 @@ export const Player = forwardRef<Group, PlayerProps>(
           }
         }
       }
+
 
 
 
