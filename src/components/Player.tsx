@@ -141,8 +141,12 @@ export const Player = forwardRef<Group, PlayerProps>(
     const plasmaMeshRef = useRef<InstancedMesh>(null);
     const plasmaSpiralRef = useRef<InstancedMesh>(null);
     const MAX_PLASMA = 30; // Synchronized with App.tsx
+    
+    // Health logic
+    const healthRef = useRef(100);
 
     // Use a ref for state to avoid re-binding event listeners
+
     const stateRef = useRef({ isAiming, hasDrill, isFiring, isDrillEquipped, isPlasmaEquipped, plasmaAmmo, isReloading });
     useEffect(() => {
       if (groupRef.current && position) {
@@ -296,12 +300,22 @@ export const Player = forwardRef<Group, PlayerProps>(
         }
       };
 
+      const handleRespawnReset = () => {
+        healthRef.current = 100;
+        oxygenLevel.current = 100;
+        setIsCableConnected(true);
+        velocity.current.set(0, 0, 0);
+      };
+
       window.addEventListener('toggle-cable', handleToggleCable);
       window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('player-respawn', handleRespawnReset);
       return () => {
         window.removeEventListener('toggle-cable', handleToggleCable);
         window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('player-respawn', handleRespawnReset);
       };
+
     }, []);
 
     const isPlayerPart = (obj: any) => {
@@ -375,9 +389,17 @@ export const Player = forwardRef<Group, PlayerProps>(
           }
         } else {
           // Deplete oxygen
-          oxygenLevel.current = Math.max(0, oxygenLevel.current - delta * 2); // Deplete in 50 seconds
+          oxygenLevel.current = Math.max(0, oxygenLevel.current - delta * 2.5); // Deplete slightly faster
+          
+          if (oxygenLevel.current <= 0) {
+            healthRef.current = Math.max(0, healthRef.current - delta * 15); // Lose 15 HP per second without O2
+            window.dispatchEvent(new CustomEvent('health-update', { 
+              detail: { health: healthRef.current, cause: 'OXIGENIO' } 
+            }));
+          }
         }
       }
+
 
       // Update Oxygen UI
       const oxygenBar = document.getElementById('oxygen-fill');
@@ -861,17 +883,24 @@ export const Player = forwardRef<Group, PlayerProps>(
                 .add(_raycaster.ray.direction.clone().multiplyScalar(0.5));
             }    
             
-            // Calculate direction from weapon tip to hit point
-             const shootDir = new Vector3().subVectors(hitPoint, startPos).normalize();
+            // Calculate direction from weapon tip to crosshair hit point
+            const shootDir = new Vector3().subVectors(hitPoint, startPos).normalize();
+            
+            // Push startPos slightly forward to avoid self-collision
+            _tempVec3E.copy(shootDir).multiplyScalar(0.8);
+            startPos.add(_tempVec3E);
             
             // Find dead projectile or add new
             const deadIdx = plasmaProjectilesRef.current.findIndex(p => p.life <= 0);
+            const projectileData = { pos: startPos.clone(), vel: shootDir.multiplyScalar(80), life: 2.5 };
+            
             if (deadIdx !== -1) {
-              plasmaProjectilesRef.current[deadIdx] = { pos: startPos, vel: shootDir.multiplyScalar(60), life: 2.0 };
+              plasmaProjectilesRef.current[deadIdx] = projectileData;
             } else if (plasmaProjectilesRef.current.length < MAX_PLASMA) {
-              plasmaProjectilesRef.current.push({ pos: startPos, vel: shootDir.multiplyScalar(60), life: 2.0 });
+              plasmaProjectilesRef.current.push(projectileData);
             }
           }
+
         }
       }
 

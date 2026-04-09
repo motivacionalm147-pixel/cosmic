@@ -85,15 +85,58 @@ export default function App() {
   const [isBlinking, setIsBlinking] = useState(false);
   const [playerSpawnPos, setPlayerSpawnPos] = useState<[number, number, number]>([0, 501, -14]);
   const [oxygenStatus, setOxygenStatus] = useState({ level: 100, isConnected: true });
+  const [health, setHealth] = useState(100);
+  const [isDead, setIsDead] = useState(false);
+  const [deathCause, setDeathCause] = useState<string | null>(null);
+
   const hasExitedShipTracker = useRef(false);
 
   useEffect(() => {
     const handleOxygenUpdate = (e: any) => {
       setOxygenStatus(e.detail);
     };
+    const handleHealthUpdate = (e: any) => {
+      setHealth(e.detail.health);
+      if (e.detail.health <= 0 && !isDead) {
+        setIsDead(true);
+        setDeathCause(e.detail.cause || 'DESCONHECIDO');
+        
+        // Auto-respawn after 5 seconds
+        setTimeout(() => {
+          handleRespawn();
+        }, 5000);
+      }
+    };
+
     window.addEventListener('oxygen-update', handleOxygenUpdate);
-    return () => window.removeEventListener('oxygen-update', handleOxygenUpdate);
-  }, []);
+    window.addEventListener('health-update', handleHealthUpdate);
+    return () => {
+      window.removeEventListener('oxygen-update', handleOxygenUpdate);
+      window.removeEventListener('health-update', handleHealthUpdate);
+    };
+  }, [isDead]);
+
+  const handleRespawn = () => {
+    setShowUI(false);
+    setIsFadingBlack(true);
+    
+    setTimeout(() => {
+      setHealth(100);
+      setIsDead(false);
+      setDeathCause(null);
+      
+      // Reset player position to inside the ship
+      if (playerRef.current) {
+        playerRef.current.position.set(0, 501, -14);
+        window.dispatchEvent(new CustomEvent('player-respawn'));
+      }
+      
+      setIsFadingBlack(false);
+      setShowUI(true);
+      setNotification('Sistemas reativados. Tente novamente.');
+    }, 1500);
+  };
+
 
   useEffect(() => {
     if (showBackpack && showTutorial) {
@@ -1147,6 +1190,42 @@ export default function App() {
         <div className="absolute top-4 right-4 flex items-center gap-2 bg-slate-900/50 px-3 py-1.5 rounded-full border border-orange-500/30 animate-[pulse_3s_ease-in-out_infinite] z-50 pointer-events-none">
           <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
           <span className="text-orange-400 text-[10px] font-bold tracking-wider">LEMBRETE: CABO DE O2 (C)</span>
+        </div>
+      )}
+
+      {/* Death Overlay */}
+      {isDead && (
+        <div className="absolute inset-0 z-[500] bg-black/90 flex flex-col items-center justify-center animate-in fade-in duration-1000">
+          <div className="flex flex-col items-center gap-8 max-w-2xl px-4">
+            <div className="relative">
+              <h1 className="text-8xl font-black text-red-600 tracking-[0.2em] relative z-10 animate-pulse">MORTE</h1>
+              <div className="absolute inset-0 text-red-900 blur-2xl -z-10 opacity-50 scale-150 transform translate-y-2">MORTE</div>
+            </div>
+            
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-16 h-[2px] bg-red-600/50"></div>
+              <p className="text-red-400 font-mono text-xl tracking-widest uppercase text-center bg-red-950/20 px-6 py-2 border border-red-900/30">
+                {deathCause === 'OXIGENIO' ? 'FALTA DE OXIGÊNIO' : 'CONDIÇÕES CRÍTICAS'}
+              </p>
+              <div className="w-16 h-[2px] bg-red-600/50"></div>
+            </div>
+
+            <p className="text-slate-500 font-mono text-xs tracking-[0.5em] mt-8 animate-pulse text-center">
+              REINICIALIZANDO SEQUÊNCIA DE CLONAGEM...
+            </p>
+            
+            {/* Loading Bar for Respawn */}
+            <div className="w-64 h-1 bg-slate-900 rounded-full overflow-hidden mt-4">
+              <div className="h-full bg-red-600 animate-[loading_5s_linear_forwards]"></div>
+            </div>
+          </div>
+
+          <style dangerouslySetInnerHTML={{ __html: `
+            @keyframes loading {
+              from { width: 0%; }
+              to { width: 100%; }
+            }
+          `}} />
         </div>
       )}
 

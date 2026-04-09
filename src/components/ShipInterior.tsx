@@ -234,7 +234,7 @@ export function ShipInterior({ playerRef, introStep, introPhase, introDialoguesL
         window.dispatchEvent(new CustomEvent('trigger-fade'));
         setTimeout(() => {
           if (playerRef.current) {
-            playerRef.current.position.set(-12, 2, -5);
+            playerRef.current.position.set(-12, 0.2, -5);
             window.dispatchEvent(new CustomEvent('show-notification', { detail: 'Lembre-se de conectar o Cabo de Oxigênio (C)!' }));
           }
         }, 300);

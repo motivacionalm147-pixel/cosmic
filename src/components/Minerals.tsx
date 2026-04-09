@@ -288,13 +288,53 @@ export function MineralCluster({ onTarget, playerRef, isDrillEquipped }: { onTar
           >
             <sphereGeometry args={[closestMineral.scale[0] * 1.5]} />
           </mesh>
-          <Html position={[0, closestMineral.scale[1] * 0.8 + 0.5, 0]} center distanceFactor={15}>
-            <div className="flex flex-col items-center pointer-events-none opacity-80">
+          <Html position={[0, closestMineral.scale[1] * 0.8 + 0.8, 0]} center distanceFactor={15}>
+            <div className="flex flex-col items-center pointer-events-none w-48 transition-all duration-300">
               {isDrillEquipped && (
-                <div className="mb-2 text-cyan-400 font-bold text-[10px] animate-bounce tracking-widest bg-cyan-900/50 px-2 py-1 rounded border border-cyan-500/50 backdrop-blur-sm shadow-[0_0_15px_#22d3ee]">TARGET ACQUIRED</div>
+                <div className="mb-2 text-cyan-400 font-bold text-[10px] animate-pulse tracking-[0.4em] bg-cyan-950/80 px-3 py-1 rounded-sm border border-cyan-500/40 backdrop-blur-md shadow-[0_0_20px_rgba(34,211,238,0.3)] uppercase">
+                  Alvo Identificado
+                </div>
               )}
-              <span className="text-[10px] font-black tracking-[0.3em] uppercase mb-0.5 drop-shadow-md" style={{ color: closestMineral.type.color }}>{closestMineral.type.rarity}</span>
-              <div className="w-8 h-[2px] bg-white/40" />
+              
+              <div className="w-full bg-slate-950/80 border border-white/10 p-2 rounded-lg backdrop-blur-xl shadow-2xl relative overflow-hidden">
+                {/* Background glow based on rarity */}
+                <div className="absolute inset-0 opacity-10 blur-xl" style={{ backgroundColor: closestMineral.type.color }}></div>
+                
+                <div className="flex justify-between items-end mb-1 relative z-10">
+                  <span className="text-[10px] font-black tracking-widest uppercase truncate max-w-[100px]" style={{ color: closestMineral.type.color }}>
+                    {closestIdRef.current && closestMineral.isLarge ? `GRANDE ${closestMineral.type.name}` : closestMineral.type.name}
+                  </span>
+                  <span className="text-[8px] text-white/40 font-mono">
+                    {Math.round(closestMineral.health)} / {closestMineral.maxHealth}
+                  </span>
+                </div>
+
+                {/* Main Health Bar */}
+                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden border border-white/5 relative z-10">
+                  <div 
+                    className="h-full transition-all duration-300 ease-out relative"
+                    style={{ 
+                      width: `${(closestMineral.health / closestMineral.maxHealth) * 100}%`,
+                      backgroundColor: closestMineral.type.color,
+                      boxShadow: `0 0 10px ${closestMineral.type.color}44`
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-[pulse_1s_infinite]"></div>
+                  </div>
+                </div>
+
+                <div className="mt-1.5 flex justify-between items-center relative z-10">
+                  <span className="text-[7px] text-white/30 uppercase tracking-[0.2em]">{closestMineral.type.rarity}</span>
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className={`w-1 h-1 rounded-full ${i < (closestMineral.type.value > 100 ? 5 : closestMineral.type.value > 50 ? 3 : 1) ? 'bg-white/40' : 'bg-white/5'}`}
+                      ></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </Html>
         </group>
