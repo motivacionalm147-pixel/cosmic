@@ -1,0 +1,5 @@
+{
+  "name": "Remix: Remix: cosmic",
+  "description": "A 3D third-person game test where you control Jack. Features dynamic movement, jumping, and NPCs that wander around the player.",
+  "requestFramePermissions": []
+}
