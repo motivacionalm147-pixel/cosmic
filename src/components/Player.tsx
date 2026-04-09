@@ -332,9 +332,12 @@ export const Player = forwardRef<Group, PlayerProps>(
         if (curr.userData?.isPlayer) return true;
         curr = curr.parent;
       }
-      return false;
-    };     useFrame((state, delta) => {
-      if (!groupRef.current || isCutsceneActive || isIntroActive || isDead) return;
+    }; 
+
+    useFrame((state, delta) => {
+      if (!groupRef.current || isCutsceneActive || isDead) return;
+
+
 
 
       // Cache scene lookups periodically (every 60 frames instead of every frame)
@@ -346,7 +349,7 @@ export const Player = forwardRef<Group, PlayerProps>(
       }
 
       // Sprint logic (double tap forward)
-      if (keys.forward && !isForwardPressed.current) {
+      if (!isIntroActive && keys.forward && !isForwardPressed.current) {
         const now = state.clock.getElapsedTime();
         if (now - lastForwardPressTime.current < 0.3) {
           if (!isSprintingRef.current) {
@@ -358,12 +361,13 @@ export const Player = forwardRef<Group, PlayerProps>(
       }
       isForwardPressed.current = keys.forward;
 
-      if (!keys.forward && !keys.left && !keys.right && !keys.backward) {
+      if (!isIntroActive && !keys.forward && !keys.left && !keys.right && !keys.backward) {
         if (isSprintingRef.current) {
           isSprintingRef.current = false;
           setIsSprinting(false);
         }
       }
+
 
       // Oxygen & Cable Logic
       let currentFloor = 0;
@@ -411,30 +415,33 @@ export const Player = forwardRef<Group, PlayerProps>(
 
 
       // Update Oxygen UI
-      const oxygenBar = document.getElementById('oxygen-fill');
-      const oxygenContainer = document.getElementById('oxygen-container');
-      if (oxygenBar && oxygenContainer) {
-        oxygenBar.style.width = `${oxygenLevel.current}%`;
-        
-        // Dispatch event for App.tsx to handle pulsing/blinking
-        window.dispatchEvent(new CustomEvent('oxygen-update', { 
-          detail: { 
-            level: oxygenLevel.current, 
-            isConnected: isCableConnected 
-          } 
-        }));
+      if (!isIntroActive) {
+        const oxygenBar = document.getElementById('oxygen-fill');
+        const oxygenContainer = document.getElementById('oxygen-container');
+        if (oxygenBar && oxygenContainer) {
+          oxygenBar.style.width = `${oxygenLevel.current}%`;
+          
+          window.dispatchEvent(new CustomEvent('oxygen-update', { 
+            detail: { 
+              level: oxygenLevel.current, 
+              isConnected: isCableConnected 
+            } 
+          }));
 
-        if (oxygenLevel.current < 20 && !isCableConnected && !isInsideShip) {
-          oxygenBar.style.backgroundColor = '#ef4444'; // Red
-          oxygenContainer.classList.add('animate-pulse');
-        } else if (oxygenLevel.current < 50) {
-          oxygenBar.style.backgroundColor = '#eab308'; // Yellow
-          oxygenContainer.classList.remove('animate-pulse');
-        } else {
-          oxygenBar.style.backgroundColor = '#06b6d4'; // Cyan
-          oxygenContainer.classList.remove('animate-pulse');
+          if (oxygenLevel.current < 20 && !isCableConnected && !isInsideShip) {
+            oxygenBar.style.backgroundColor = '#ef4444'; // Red
+            oxygenContainer.classList.add('animate-pulse');
+          } else if (oxygenLevel.current < 50) {
+            oxygenBar.style.backgroundColor = '#eab308'; // Yellow
+            oxygenContainer.classList.remove('animate-pulse');
+          } else {
+            oxygenBar.style.backgroundColor = '#06b6d4'; // Cyan
+            oxygenContainer.classList.remove('animate-pulse');
+          }
         }
       }
+
+
 
       // Movement logic
       if (isFlying) {
@@ -827,23 +834,26 @@ export const Player = forwardRef<Group, PlayerProps>(
       pCamera.fov = MathUtils.lerp(pCamera.fov, targetFov, isAiming ? 0.08 : 0.12); // Smooth transition
       pCamera.updateProjectionMatrix();
 
-      // Recoil and shake logic
-      if (characterGroupRef.current) {
-        if (isFiring && isAiming && hasDrill && isDrillEquipped) {
-          const time = state.clock.getElapsedTime();
-          // Shake
-          characterGroupRef.current.position.x = (Math.random() - 0.5) * 0.05;
-          characterGroupRef.current.position.y = (Math.random() - 0.5) * 0.05;
-          // Recoil (push backward slightly)
-          characterGroupRef.current.position.z = MathUtils.lerp(characterGroupRef.current.position.z, -0.1, 0.2);
-        } else if (isFiring && isPlasmaEquipped) {
-          // Plasma recoil
-          characterGroupRef.current.position.z = MathUtils.lerp(characterGroupRef.current.position.z, -0.05, 0.2);
-        } else {
-          // Return to normal
-           characterGroupRef.current.position.lerp(_zeroVec, 0.1);
+      // Recoil, firing and actions
+      if (!isIntroActive) {
+        if (characterGroupRef.current) {
+          if (isFiring && isAiming && hasDrill && isDrillEquipped) {
+            const time = state.clock.getElapsedTime();
+            // Shake
+            characterGroupRef.current.position.x = (Math.random() - 0.5) * 0.05;
+            characterGroupRef.current.position.y = (Math.random() - 0.5) * 0.05;
+            // Recoil (push backward slightly)
+            characterGroupRef.current.position.z = MathUtils.lerp(characterGroupRef.current.position.z, -0.1, 0.2);
+          } else if (isFiring && isPlasmaEquipped) {
+            // Plasma recoil
+            characterGroupRef.current.position.z = MathUtils.lerp(characterGroupRef.current.position.z, -0.05, 0.2);
+          } else {
+            // Return to normal
+             characterGroupRef.current.position.lerp(_zeroVec, 0.1);
+          }
         }
       }
+
 
       // Plasma Firing Logic
       if (isFiring && isPlasmaEquipped && !isReloading) {
