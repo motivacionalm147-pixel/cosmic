@@ -16,7 +16,8 @@ import { ShipInterior } from './components/ShipInterior';
 import { PlanetCutscene } from './components/PlanetCutscene';
 import { Group } from 'three';
 import { EffectComposer, DepthOfField } from '@react-three/postprocessing';
-import { Syringe3D } from './components/Syringe3D';
+import { OxygenTube3D } from './components/OxygenTube3D';
+
 
 
 import * as THREE from 'three';
@@ -149,16 +150,11 @@ export default function App() {
   // Intro Dialogue State
   const [introStep, setIntroStep] = useState(5);
   const [isBlurred, setIsBlurred] = useState(true);
-  const [showSyringe, setShowSyringe] = useState(false);
+  const [showOxygenPrompt, setShowOxygenPrompt] = useState(false);
   const [isIntroActive, setIsIntroActive] = useState(false);
 
-  const introDialogues = [
-    "Ai... minha cabeça... que dor insuportável...",
-    "A queda foi pior do que eu pensava. Onde eu estou?",
-    "Meus olhos... não consigo focar em nada. Tudo está borrado.",
-    "Preciso do kit de emergência... a seringa de adrenalina...",
-    "É a única forma de estabilizar meus sentidos."
-  ];
+  const introDialogues: string[] = []; // Removed pain dialogues
+
 
 
   useEffect(() => {
@@ -184,8 +180,10 @@ export default function App() {
               setIsBlinking(false);
               setIsIntroActive(true);
               setIsBlurred(true);
+              setShowOxygenPrompt(true);
               setIntroStep(0); 
             }, 3000);
+
           }, 1000);
         }, 4000);
       }
@@ -203,11 +201,9 @@ export default function App() {
       if (introStep >= 0 && introStep < introDialogues.length) {
         if (e.code === 'Enter') {
           setIntroStep(prev => prev + 1);
-          if (introStep === introDialogues.length - 1) {
-             setShowSyringe(true);
-          }
         }
       }
+
 
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1235,10 +1231,11 @@ export default function App() {
 
       {/* Intro Blur Effect */}
       {isIntroActive && isBlurred && (
-        <div className="absolute inset-0 z-[400] backdrop-blur-[20px] bg-red-950/10 pointer-events-none transition-all duration-2000">
-           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-60"></div>
+        <div className="absolute inset-0 z-[400] backdrop-blur-[8px] bg-slate-950/10 pointer-events-none transition-all duration-2000">
+           <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black opacity-40"></div>
         </div>
       )}
+
 
       {/* Central Mineral HUD */}
       {targetInfo && !isDead && (
@@ -1389,20 +1386,21 @@ export default function App() {
         <NPC name="CPL. HAWK" role="ASSAULT" color="#451a1a" startPosition={[8, 0, -8]} playerRef={playerRef} showUI={showUI} isInjured={true} />
 
         {/* Effect composer removed for better optimization */}
-        {/* 3D Syringe Interaction */}
-        {showSyringe && (
-          <Syringe3D 
-            onUse={() => {
-              setShowSyringe(false);
+        {/* 3D Oxygen Interaction */}
+        {showOxygenPrompt && (
+          <OxygenTube3D 
+            onActivate={() => {
+              setShowOxygenPrompt(false);
               setIsBlurred(false);
               setTimeout(() => {
                 setIsIntroActive(false);
-                setNotification("Sentidos Estabilizados.");
+                setNotification("Sistemas de Oxigênio Estabilizados.");
               }, 2000);
             }} 
           />
         )}
       </Canvas>
+
 
       )}
       <Loader 
