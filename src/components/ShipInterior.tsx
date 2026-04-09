@@ -207,9 +207,10 @@ export function ShipInterior({ playerRef, introStep, introPhase, introDialoguesL
       setInStorage(newInStorage);
     }
 
-    const isInside = playerRef.current.position.y > 250;
+    const globeCenter = new Vector3(0, 500, 2);
+    const distToGlobe = playerRef.current.position.distanceTo(globeCenter);
     const isIntroDone = introPhase === 'done' && (introStep >= introDialoguesLength || introStep === -1);
-    const newExitPrompt = isInside && isIntroDone;
+    const newExitPrompt = distToGlobe < 4 && isIntroDone;
     if (newExitPrompt !== showExitPromptRef.current) {
       showExitPromptRef.current = newExitPrompt;
       setShowExitPrompt(newExitPrompt);
